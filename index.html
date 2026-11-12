@@ -220,12 +220,14 @@ function home(){
 
 const NOTE_SECTIONS=[['completed','Travail effectué'],['ongoing','Travail en cours'],['projection','Projection'],['services','Services'],['decoration','Décoration']];
 
+
 function bulletNoteText(text){
- return text===''?'':String(text).replace(/\r\n?/g,'\n').split('\n').map(line=>'• '+line.replace(/^•[ \t]?/,'')).join('\n');
+ return String(text||'').replace(/\r\n?/g,'\n').split('\n').map(line=>line.trim()===''?'':'• '+line.replace(/^•[ \t]?/,'')).join('\n');
 }
 function bulletNotePosition(text,position){
  const lines=text.slice(0,position).split('\n'),line=lines.pop();
- const preceding=lines.reduce((length,item)=>length+bulletNoteText(item||'• ').length+1,0);
+ const preceding=lines.reduce((length,item)=>length+bulletNoteText(item).length+1,0);
+ if(!line.trim())return preceding+line.length;
  const prefix=(line.match(/^•[ \t]?/)||[''])[0].length;
  return preceding+Math.max(2,line.length+2-prefix);
 }
@@ -234,23 +236,33 @@ function noteListMarkup(text){
  return ideas.length?'<ul class="note">'+ideas.map(idea=>'<li>'+esc(idea)+'</li>').join('')+'</ul>':'<p class="note-empty">Non renseigné.</p>';
 }
 function bindNoteField(el,agent){
- const persist=()=>{agent.notes={...(agent.notes||{}),[el.dataset.note]:el.value};save();};
+ let previous=el.value;
+ const persist=()=>{previous=el.value;agent.notes={...(agent.notes||{}),[el.dataset.note]:el.value};save();};
  const normalize=()=>{
   const text=el.value,next=bulletNoteText(text),start=el.selectionStart,end=el.selectionEnd;
   if(next!==text){el.value=next;el.setSelectionRange(bulletNotePosition(text,start),bulletNotePosition(text,end));}
   persist();
  };
- el.addEventListener('focus',()=>{if(!el.value){el.value='• ';persist();}});
  el.addEventListener('keydown',event=>{
-  if(event.key==='Enter'&&!event.isComposing){event.preventDefault();el.setRangeText('\n• ',el.selectionStart,el.selectionEnd,'end');persist();}
+  if(event.isComposing)return;
+  const start=el.selectionStart,end=el.selectionEnd,lineStart=el.value.lastIndexOf('\n',start-1)+1;
+  if(event.key==='Backspace'&&start===end&&/^•[ \t]?$/.test(el.value.slice(lineStart,start))){
+   event.preventDefault();const lineEnd=el.value.indexOf('\n',start),rest=el.value.slice(start,lineEnd<0?el.value.length:lineEnd);
+   el.setRangeText('',rest===''&&lineStart>0?lineStart-1:lineStart,start,'end');persist();return;
+  }
+  if(event.key==='Enter'){event.preventDefault();el.setRangeText('\n• ',start,end,'end');persist();}
  });
- el.addEventListener('input',event=>{if(!event.isComposing)normalize();});
- el.addEventListener('compositionend',normalize);
+ el.addEventListener('input',event=>{
+  if(event.isComposing)return;
+  const deleting=String(event.inputType||'').startsWith('delete')||el.value.length<previous.length;
+  if(!deleting&&(event.inputType==='insertFromPaste'||previous===''&&el.value!==''))normalize();else persist();
+ });
+ el.addEventListener('compositionend',()=>{if(previous===''&&el.value!=='')normalize();else persist();});
 }
 
 function agentNotesMarkup(agent){
  const notes=agent.notes||{};
- return `<section class="simple-card agent-notes no-print" aria-labelledby="agent-notes-heading"><h2 id="agent-notes-heading">Support de notation</h2>${NOTE_SECTIONS.map(([key,label])=>`<label for="agent-note-${key}">${label}</label><textarea id="agent-note-${key}" data-note="${key}" placeholder="• Description libre…">${esc(bulletNoteText(notes[key]||''))}</textarea>`).join('')}<div class="tools"><button onclick="printAgentNotes()">Imprimer notes et simulation</button></div></section>`;
+ return `<section class="simple-card agent-notes no-print" aria-labelledby="agent-notes-heading"><h2 id="agent-notes-heading">Support de notation</h2>${NOTE_SECTIONS.map(([key,label])=>`<label for="agent-note-${key}">${label}</label><textarea id="agent-note-${key}" data-note="${key}" placeholder="• Description libre…">${esc(notes[key]||'')}</textarea>`).join('')}<div class="tools"><button onclick="printAgentNotes()">Imprimer notes et simulation</button></div></section>`;
 }
 function notesSimulationMarkup(agent,index){
  const simulation=selectedPDFSimulation(agent,index),current=simulation.rows[0],score=calculate(current);
