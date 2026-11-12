@@ -218,7 +218,7 @@ function home(){
  h.innerHTML=`<h1>Choisir un agent</h1><div class="agent-list">${state.map((a,i)=>`<button class="agent-choice" onclick="openAgent(${i})"><span class="agent-choice-label"><span class="rank-bars" aria-hidden="true"><i></i><i></i></span><strong>${a.name}</strong></span><span aria-hidden="true">›</span></button>`).join('')}</div><details class="options"><summary>Options</summary><div class="tools"><button onclick="backup()">Exporter</button><button onclick="document.getElementById('import').click()">Importer</button><button onclick="downloadHTML()">Télécharger le HTML</button></div></details>`;
 }
 
-const NOTE_SECTIONS=[['completed','Travail effectué'],['ongoing','Travail en cours'],['projection','Projection']];
+const NOTE_SECTIONS=[['completed','Travail effectué'],['ongoing','Travail en cours'],['projection','Projection'],['services','Services'],['decoration','Décoration']];
 function agentNotesMarkup(agent){
  const notes=agent.notes||{};
  return `<section class="simple-card agent-notes no-print" aria-labelledby="agent-notes-heading"><h2 id="agent-notes-heading">Support de notation</h2>${NOTE_SECTIONS.map(([key,label])=>`<label for="agent-note-${key}">${label}</label><textarea id="agent-note-${key}" data-note="${key}" placeholder="Description libre…">${esc(notes[key]||'')}</textarea>`).join('')}<div class="tools"><button onclick="printAgentNotes()">Imprimer notes et simulation</button></div></section>`;
