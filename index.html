@@ -24,11 +24,20 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 @media print{.agent-notes{display:none!important}}
 </style>
 <style id="agent-ratings-style">
-.agent-facts.has-ratings{grid-template-columns:repeat(7,minmax(0,1fr))}
-.agent-fact-rating select{display:block;width:100%;min-width:0;max-width:108px;height:30px;min-height:30px;margin:0;padding:0 19px 1px 2px;border:0;border-bottom:1px solid #b9c7c2;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
-.agent-fact-rating select:focus-visible{outline:2px solid #d19e3e;outline-offset:2px;border-bottom-color:#146f61}
-@media(max-width:850px) and (min-width:551px){.agent-facts.has-ratings{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:550px){.agent-facts.has-ratings{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.agent-facts.has-ratings{margin-bottom:10px}
+.ratings-box{border:1px solid #dce5df;background:#fff;border-radius:10px;padding:9px 12px;margin:0 0 20px;break-inside:avoid}
+.ratings-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;font-size:11px;font-weight:650;color:#566a65}
+.ratings-head small{font-size:10px;font-weight:400;color:#74847f}
+.ratings-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.rating-item{min-width:0;text-align:center;border-right:1px solid #e7ede9;padding:0 2px}
+.rating-item:last-child{border:0}
+.rating-item .rating-year{display:block;color:#6e807a;font-size:10px;font-weight:600;line-height:1.45}
+.rating-value{display:block;font-size:17px;font-weight:700;line-height:30px;font-variant-numeric:tabular-nums}
+.rating-item.is-proposed .rating-value,.rating-item.is-proposed select{color:#137568}
+.rating-item select{display:block;width:100%;min-height:30px;height:30px;margin:0;padding:1px 12px 1px 0;background:#fbfcfb;border:1px solid #d8e2dc;border-radius:5px;color:var(--ink);text-align:center;text-align-last:center;font-size:14px;font-weight:650}
+.rating-item select:focus-visible{outline:2px solid #d19e3e;outline-offset:1px}
+@media(max-width:450px){.ratings-box{padding:8px 7px}.ratings-years{gap:2px}.rating-value{font-size:16px}.rating-item select{font-size:13px;padding-right:10px}}
+@media print{.ratings-box{border:1px solid #dce5df;padding:8px 10px}.rating-item select{border:0;appearance:none;background:transparent;padding:0}}
 </style>
 <style>.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style><style>.rank-bars[data-grade="QM1"] i,.rank-bars[data-grade="QM2"] i,.rank-bars[data-grade="MO"] i{background:#c62828}</style></head><body>
 <header><div class="logo">BS</div><div><div class="brand">Compte de points</div><div class="subtitle">Simulateur de notation</div></div></header>
@@ -83,7 +92,7 @@ function profileFactsMarkup(agent,now=new Date(),editable=true){
  const p=AGENT_PROFILES[agent.name]||{},grade=agentGrade(agent);
  const fields=[['Matricule',p.matricule||'Non renseigné'],['Âge',profileAge(p.birthDate,now)],[grade==='SM'?'Ancienneté second maître':grade?'Ancienneté '+grade:'Ancienneté dans le grade',profileDuration(p.gradeStart,now)],['Ancienneté BMPM',profileDuration(p.bmpStart,now)],['Ancienneté LVN',profileDuration(p.lvnStart,now)]];
  const ratings=agentRatingsMarkup(agent,editable);
- return '<dl class="agent-facts'+(ratings?' has-ratings':'')+'">'+fields.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+ratings+'</dl>';
+ return '<dl class="agent-facts'+(ratings?' has-ratings':'')+'">'+fields.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>').join('')+'</dl>'+ratings;
 }
 function agentIdentityMarkup(agent){
  const p=AGENT_PROFILES[agent.name];
@@ -176,7 +185,10 @@ function ratingOptions(value){
  return empty+older+values.map(note=>`<option value="${note}" ${original!==''&&number===note?'selected':''}>${String(note).replace('.',',')}</option>`).join('');
 }
 function field(k,label,type='number',extra=''){
- if(['F','G','H','I'].includes(k))return `<label>${label}<select data-key="${k}" aria-label="${esc(label)}">${noteOptions(state[active].rows[selected][k])}</select></label>`;
+ if(['F','G','H','I'].includes(k)){
+  const original=SEED[active].rows[0],row=state[active].rows[selected],locked=hasPointCalculator(state[active])&&!row.variant&&row.year===original.year;
+  return `<label>${label}<select data-key="${k}" aria-label="${esc(label)}" ${locked?'disabled title="Historique figé, extrait du calculateur"':''}>${noteOptions(row[k])}</select></label>`;
+ }
  const r=state[active].rows[selected],hasReference=['D','E','J'].includes(k),reference=SEED[active].rows[0][k];
  const refText=hasReference?Number(reference).toLocaleString('fr-FR'):'';
  return `<label>${label}${hasReference?` <span class="simulation-label">Simulation</span><span id="reference-${k}" class="current-reference">Actuel : <strong>${esc(refText)}</strong></span>`:''}<input data-key="${k}" aria-label="${esc(label)}" ${hasReference?`aria-describedby="reference-${k}" placeholder="${esc(refText)} (valeur actuelle)"`:''} type="${type}" ${type==='number'?'step="any" min="0" inputmode="decimal"':''} value="${esc(r[k])}" ${extra}></label>`
@@ -325,23 +337,67 @@ function bindNoteField(el,agent){
  el.addEventListener('compositionend',()=>{if(previous===''&&el.value!=='')normalize();else persist();});
 }
 
-function agentRatingsMarkup(agent,editable=true){
+function ratingDisplay(value){
+ return value===''||value===null||value===undefined?'—':String(value).replace('.',',');
+}
+function agentRatingHistory(agent){
  const grade=agentGrade(agent);
- if(!['SM','QM1','QM2','MO'].includes(grade))return '';
+ if(grade==='SM'){
+  // Historique figé, directement extrait de la première ligne originale du calculateur.
+  const source=SEED.find(seed=>seed.name===agent.name)?.rows?.[0];
+  return [[2022,'',source?.I],[2023,'',source?.H],[2024,'',source?.G],[2025,'',source?.F]];
+ }
  const notes=agent.notes||{};
- return [['previousRating','Notation 2025'],['proposedRating','Proposée 2026']].map(([key,label])=>{
-  // Pour les seconds maîtres, la note N−1 du premier tableau correspond à la dernière notation 2025.
-  const fallback=key==='previousRating'&&grade==='SM'?agent.rows?.[0]?.F:'';
-  const value=String(notes[key]??fallback??'');
-  const content=editable?`<select id="agent-rating-${key}" data-rating="${key}" aria-label="${esc(label)}">${ratingOptions(value)}</select>`:esc(value.trim().replace('.',',')||'—');
-  return `<div class="agent-fact-rating"><dt><label for="agent-rating-${key}">${esc(label)}</label></dt><dd>${content}</dd></div>`;
- }).join('');
+ return [[2022,'previousRating2022',notes.previousRating2022??''],[2023,'previousRating2023',notes.previousRating2023??''],[2024,'previousRating2024',notes.previousRating2024??''],[2025,'previousRating',notes.previousRating??'']];
+}
+function proposedRating2026(agent){
+ if(hasPointCalculator(agent)){
+  const source=SEED.find(seed=>seed.name===agent.name)?.rows?.[0];
+  // La proposition n'est pas saisie ici : elle suit la première ligne de projection.
+  return agent.rows.find(row=>!row.variant&&source&&row.year===source.year+1)?.F??'';
+ }
+ return agent.notes?.proposedRating??'';
+}
+function agentRatingsMarkup(agent,editable=true){
+ if(!['SM','QM1','QM2','MO'].includes(agentGrade(agent)))return '';
+ const fixed=hasPointCalculator(agent),history=agentRatingHistory(agent);
+ const items=history.map(([year,key,value])=>{
+  const content=editable&&!fixed?`<select data-rating="${key}" aria-label="Notation ${year}">${ratingOptions(value)}</select>`:`<span class="rating-value" aria-label="Notation ${year} : ${esc(ratingDisplay(value))}">${esc(ratingDisplay(value))}</span>`;
+  return `<div class="rating-item"><span class="rating-year">${year}</span>${content}</div>`;
+ });
+ const proposed=proposedRating2026(agent);
+ const current=editable&&!fixed?`<select data-rating="proposedRating" aria-label="Notation proposée 2026">${ratingOptions(proposed)}</select>`:`<output class="rating-value" ${editable&&fixed?'id="rating-proposed-2026"':''} aria-label="Notation proposée 2026">${esc(ratingDisplay(proposed))}</output>`;
+ items.push(`<div class="rating-item is-proposed"><span class="rating-year">2026</span>${current}</div>`);
+ return `<section class="ratings-box" aria-label="Historique des notations"><div class="ratings-head"><span>Notations</span><small>2026 · proposée${fixed?' (simulation)':''}</small></div><div class="ratings-years">${items.join('')}</div></section>`;
+}
+function updateProposedRating(agent){
+ const output=document.getElementById('rating-proposed-2026');
+ if(output)output.textContent=ratingDisplay(proposedRating2026(agent));
 }
 function bindRatingFields(agent){
  document.querySelectorAll('[data-rating]').forEach(el=>el.addEventListener('change',()=>{
   agent.notes={...(agent.notes||{}),[el.dataset.rating]:el.value};
   save();
  }));
+}
+function protectHistoricalRatings(agent){
+ if(!hasPointCalculator(agent))return;
+ const source=SEED.find(seed=>seed.name===agent.name)?.rows?.[0];
+ const current=agent.rows.find(row=>!row.variant&&source&&row.year===source.year);
+ if(!current||!source)return;
+ let changed=false;
+ for(const key of ['F','G','H','I'])if(current[key]!==source[key]){current[key]=source[key];changed=true;}
+ if(changed){
+  // Rétablir le décalage des notes historiques dans les projections existantes.
+  let previous=null;
+  for(const row of agent.rows){
+   if(row.variant)continue;
+   if(previous){row.G=previous.F;row.H=previous.G;row.I=previous.H;}
+   previous=row;
+  }
+  rebuildLevels(agent.rows,source.J);
+  save();
+ }
 }
 function agentNotesMarkup(agent){
  const notes=agent.notes||{};
@@ -361,13 +417,14 @@ function printAgentNotes(){
  frame.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0';
  document.body.appendChild(frame);
  const doc=frame.contentDocument;
- doc.open();doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Notes et simulation - ${esc(agent.name)}</title><style>@page{size:A4;margin:18mm}body{font:12pt/1.6 system-ui,sans-serif;color:#142d35;margin:0}h1{font-size:24pt;line-height:1.2;margin:0 0 8px}.date{font-size:10pt;color:#617176;margin-bottom:28px}h2{font-size:15pt;border-bottom:1px solid #c9d5d0;padding-bottom:6px;margin:26px 0 10px;break-after:avoid}.note{padding-left:22px;list-style-type:disc;overflow-wrap:anywhere;orphans:3;widows:3}.note li{white-space:pre-wrap;margin:5px 0}footer{margin-top:30px;border-top:1px solid #c9d5d0;padding-top:10px;font-size:9pt;color:#617176}.metrics{display:flex;gap:24px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #c9d5d0}th:last-child,td:last-child{text-align:right}.simulation-summary{break-inside:avoid}.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style></head><body><h1>${esc(agent.name)} · Support de notation</h1><p class="date">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>${profileFactsMarkup(agent,new Date(),false)}${notesSimulationMarkup(agent,selected)}${NOTE_SECTIONS.map(([key,label])=>`<section><h2>${label}</h2>${noteListMarkup(notes[key])}</section>`).join('')}<footer>Support d’argumentation de la notation</footer></body></html>`);doc.close();
+ doc.open();doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Notes et simulation - ${esc(agent.name)}</title><style>@page{size:A4;margin:18mm}body{font:12pt/1.6 system-ui,sans-serif;color:#142d35;margin:0}h1{font-size:24pt;line-height:1.2;margin:0 0 8px}.date{font-size:10pt;color:#617176;margin-bottom:28px}h2{font-size:15pt;border-bottom:1px solid #c9d5d0;padding-bottom:6px;margin:26px 0 10px;break-after:avoid}.note{padding-left:22px;list-style-type:disc;overflow-wrap:anywhere;orphans:3;widows:3}.note li{white-space:pre-wrap;margin:5px 0}footer{margin-top:30px;border-top:1px solid #c9d5d0;padding-top:10px;font-size:9pt;color:#617176}.metrics{display:flex;gap:24px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #c9d5d0}th:last-child,td:last-child{text-align:right}.simulation-summary{break-inside:avoid}.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}.ratings-box{border:1px solid #dce5df;padding:8px 10px;border-radius:7px;margin:0 0 16px;break-inside:avoid}.ratings-head{display:flex;justify-content:space-between;font-size:10px;color:#566a65;font-weight:600;margin-bottom:5px}.ratings-head small{font-weight:400}.ratings-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}.rating-item{text-align:center;border-right:1px solid #e7ede9}.rating-item:last-child{border:0}.rating-year{display:block;font-size:9px;color:#6e807a}.rating-value{font-size:15px;font-weight:700}.rating-item.is-proposed .rating-value{color:#137568}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style></head><body><h1>${esc(agent.name)} · Support de notation</h1><p class="date">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>${profileFactsMarkup(agent,new Date(),false)}${notesSimulationMarkup(agent,selected)}${NOTE_SECTIONS.map(([key,label])=>`<section><h2>${label}</h2>${noteListMarkup(notes[key])}</section>`).join('')}<footer>Support d’argumentation de la notation</footer></body></html>`);doc.close();
  frame.contentWindow.addEventListener('afterprint',()=>setTimeout(()=>frame.remove(),1000),{once:true});
  (doc.fonts?doc.fonts.ready:Promise.resolve()).then(()=>{frame.contentWindow.focus();frame.contentWindow.print();});
 }
 
 function render(){
  const a=state[active];
+ protectHistoricalRatings(a);
  if(!hasPointCalculator(a)){
   document.title=a.name+' · Fiche agent';
   document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}</div>${profileFactsMarkup(a)}${agentNotesMarkup(a)}<p class="simple-footnote"><span class="save"></span></p>`;
@@ -400,11 +457,13 @@ function update(){
  document.getElementById('projection').innerHTML=next.length?`<div class="future-head"><span>Année</span><span>Notation</span><span>Points</span></div>${next.map(({x,j})=>{const q=calculate(x);return `<div class="future-row"><span>${x.year}<small>/ ${x.year+1}</small></span><select aria-label="Notation ${x.year} / ${x.year+1}" onchange="futureNote(this,${j})">${noteOptions(x.F)}</select><strong id="future-score-${j}">${q.error?'À compléter':num(q.total)}</strong></div>`}).join('')}`:'<p class="hint">Ajoutez une année dans les réglages avancés.</p>';
  document.getElementById('calculation-details').innerHTML=c.error?'':`<h3>Détail du calcul</h3>${['NFS et ancienneté','TOEIC','Notations et points positifs','CCPG','Gops'].map((label,i)=>`<div class="part"><span>${label}</span><span>${num(c.parts[i])}</span></div>`).join('')}`;
  document.querySelectorAll('.save').forEach(el=>el.textContent=storageOK?'Enregistré sur cet appareil':'Exportez une sauvegarde : enregistrement indisponible.');
+ updateProposedRating(state[active]);
 }
 function futureNote(el,index){
  const rows=state[active].rows,r=rows[index],old=r.F;r.F=el.value===''?'':Number(el.value);
  propagateNotation(rows,index,'F',old);rebuildLevels(rows,SEED[active].rows[0].J);save();
  for(let j=0;j<rows.length;j++){const cell=document.getElementById('future-score-'+j);if(cell){const q=calculate(rows[j]);cell.textContent=q.error?'À compléter':num(q.total)}}
+ updateProposedRating(state[active]);
 }
 function addYearPrompt(){
  const rows=state[active].rows,previous=rows.filter(r=>!r.variant).at(-1);if(calculate(previous).error){alert('Complétez la dernière année avant d’en ajouter une nouvelle.');openAgent(active,rows.indexOf(previous));return}
