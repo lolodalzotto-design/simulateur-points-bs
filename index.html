@@ -25,9 +25,8 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 </style>
 <style id="agent-ratings-style">
 .agent-facts.has-ratings{grid-template-columns:repeat(7,minmax(0,1fr))}
-.agent-fact-rating input{display:block;width:100%;min-width:0;max-width:108px;height:27px;margin:0;padding:1px 2px 2px;border:0;border-bottom:1px solid #b9c7c2;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:14px;font-weight:600}
-.agent-fact-rating input:focus-visible{outline:2px solid #d19e3e;outline-offset:2px;border-bottom-color:#146f61}
-.agent-fact-rating input::placeholder{color:#8c9b96;font-weight:400}
+.agent-fact-rating select{display:block;width:100%;min-width:0;max-width:108px;height:30px;min-height:30px;margin:0;padding:0 19px 1px 2px;border:0;border-bottom:1px solid #b9c7c2;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.agent-fact-rating select:focus-visible{outline:2px solid #d19e3e;outline-offset:2px;border-bottom-color:#146f61}
 @media(max-width:850px) and (min-width:551px){.agent-facts.has-ratings{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:550px){.agent-facts.has-ratings{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
@@ -166,9 +165,15 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=tr
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=x=>fmt.format(x);const title=r=>`${r.year} / ${r.year+1}${r.variant?' · variante':''}`;
 function noteOptions(value){
- const values=[1,1.5,2,3],number=Number(value);
+ const values=[0,0.5,1,1.5,2,3],number=Number(value);
  const current=value===''?'<option value="" disabled selected>Choisir</option>':values.includes(number)?'':`<option value="${esc(value)}" disabled selected>${esc(value)}</option>`;
- return current+values.map(note=>`<option value="${note}" ${value!==''&&number===note?'selected':''}>${note}</option>`).join('');
+ return current+values.map(note=>`<option value="${note}" ${value!==''&&number===note?'selected':''}>${String(note).replace('.',',')}</option>`).join('');
+}
+function ratingOptions(value){
+ const values=[0,0.5,1,1.5,2,3],original=String(value??''),normalized=original.replace(',','.'),number=Number(normalized);
+ const empty=`<option value="" ${original===''?'selected':''}>—</option>`;
+ const older=original!==''&&!values.includes(number)?`<option value="${esc(original)}" disabled selected>${esc(original)}</option>`:'';
+ return empty+older+values.map(note=>`<option value="${note}" ${original!==''&&number===note?'selected':''}>${String(note).replace('.',',')}</option>`).join('');
 }
 function field(k,label,type='number',extra=''){
  if(['F','G','H','I'].includes(k))return `<label>${label}<select data-key="${k}" aria-label="${esc(label)}">${noteOptions(state[active].rows[selected][k])}</select></label>`;
@@ -321,16 +326,19 @@ function bindNoteField(el,agent){
 }
 
 function agentRatingsMarkup(agent,editable=true){
- if(!['QM1','QM2','MO'].includes(agentGrade(agent)))return '';
+ const grade=agentGrade(agent);
+ if(!['SM','QM1','QM2','MO'].includes(grade))return '';
  const notes=agent.notes||{};
  return [['previousRating','Notation 2025'],['proposedRating','Proposée 2026']].map(([key,label])=>{
-  const value=String(notes[key]??'');
-  const content=editable?`<input id="agent-rating-${key}" data-rating="${key}" type="text" inputmode="decimal" autocomplete="off" aria-label="${esc(label)}" placeholder="—" value="${esc(value)}">`:esc(value.trim()||'—');
+  // Pour les seconds maîtres, la note N−1 du premier tableau correspond à la dernière notation 2025.
+  const fallback=key==='previousRating'&&grade==='SM'?agent.rows?.[0]?.F:'';
+  const value=String(notes[key]??fallback??'');
+  const content=editable?`<select id="agent-rating-${key}" data-rating="${key}" aria-label="${esc(label)}">${ratingOptions(value)}</select>`:esc(value.trim().replace('.',',')||'—');
   return `<div class="agent-fact-rating"><dt><label for="agent-rating-${key}">${esc(label)}</label></dt><dd>${content}</dd></div>`;
  }).join('');
 }
 function bindRatingFields(agent){
- document.querySelectorAll('[data-rating]').forEach(el=>el.addEventListener('input',()=>{
+ document.querySelectorAll('[data-rating]').forEach(el=>el.addEventListener('change',()=>{
   agent.notes={...(agent.notes||{}),[el.dataset.rating]:el.value};
   save();
  }));
@@ -383,7 +391,7 @@ function render(){
  const r=a.rows[selected];document.title=`${a.name} · Points BS`;
  document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}<button class="no-print" onclick="printSheet()">Imprimer</button></div>${profileFactsMarkup(a)}<div id="pdf-ready" class="hint no-print" hidden></div><p class="period">${title(r)}</p><div class="current-values">${[['D','NFS'],['E','TOEIC'],['J','Niveau']].map(([k,l])=>`<div><span>${l} actuel</span><strong>${Number(SEED[active].rows[0][k]).toLocaleString('fr-FR')}</strong></div>`).join('')}</div><section class="simple-card"><h2>Simulation</h2><div class="simple-inputs">${field('D','NFS')}${field('E','TOEIC','number','max="990"')}<div class="fixed-level"><span>Niveau de notation</span><small>Actuel · fixe</small><output id="current-level" aria-label="Niveau de notation actuel">${Number(SEED[active].rows[0].J).toLocaleString('fr-FR')}</output></div></div><div id="result" aria-live="polite"></div></section><section class="simple-card"><h2>Projection sur 4 ans</h2><div id="projection"></div></section><details class="advanced no-print"><summary>Réglages avancés</summary><div class="advanced-body"><nav class="years" aria-label="Année à régler">${a.rows.map((x,j)=>`<button class="${j===selected?'selected':''}" onclick="openAgent(${active},${j})">${title(x)}</button>`).join('')}</nav><h3>Dates et autres résultats</h3><div class="fields">${field('A','Date d’arrêt','date')}${field('C','Promotion SM / dernier BAT','date')}${field('L','CCPG / 60','number','max="60"')}${field('K','Points positifs')}</div><h3>Notations prises en compte</h3><div class="fields">${field('F','Notation N−1')}${field('G','Notation N−2')}${field('H','Notation N−3')}${field('I','Notation N−4')}</div><h3>Gain opérationnel</h3><div class="fields">${selectField('gopsMode','Mode',[['auto','Calcul automatique'],['manual','Saisie directe']])}${field('gops','Gops saisi','number',r.gopsMode==='auto'?'disabled':'')}${selectField('M','Insigne surfacier',[['','Aucun'],['M SURFELEM','M SURFELEM'],['M SURFSUP','M SURFSUP']])}${selectField('N','Insigne sous-marinier',[['','Aucun'],['C SOUMARELE','C SOUMARELE'],['C SOUMARSUP','C SOUMARSUP']])}${field('O','Jours OPEX / zone d’insécurité')}${field('P','Heures bonifiées aériennes')}</div><div class="tools"><button onclick="copyForward()">Reporter tous les paramètres</button><button onclick="addYearPrompt()">Ajouter une année</button><button onclick="resetAgent()">Réinitialiser cet agent</button></div><div id="calculation-details"></div></div></details>${agentNotesMarkup(a)}<p class="simple-footnote">Simulation indicative · <span class="save"></span></p><p class="printonly">Édité le ${new Date().toLocaleDateString('fr-FR')} · Compte indicatif selon Formule BS.xlsx.</p>`;
  document.querySelectorAll('[data-note]').forEach(el=>bindNoteField(el,a));
- document.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('input',()=>change(el)));update();
+ document.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('input',()=>change(el)));bindRatingFields(a);update();
 }
 function update(){
  const rows=state[active].rows,r=rows[selected],c=calculate(r);
@@ -400,7 +408,7 @@ function futureNote(el,index){
 }
 function addYearPrompt(){
  const rows=state[active].rows,previous=rows.filter(r=>!r.variant).at(-1);if(calculate(previous).error){alert('Complétez la dernière année avant d’en ajouter une nouvelle.');openAgent(active,rows.indexOf(previous));return}
- const value=prompt('Notation pour la prochaine année :','3');if(value===null)return;const note=Number(value.replace(',','.'));if(value.trim()===''||![1,1.5,2,3].includes(note)){alert('Choisissez une notation : 1, 1.5, 2 ou 3.');return}
+ const value=prompt('Notation pour la prochaine année :','3');if(value===null)return;const note=Number(value.replace(',','.'));if(value.trim()===''||![0,0.5,1,1.5,2,3].includes(note)){alert('Choisissez une notation : 0, 0,5, 1, 1,5, 2 ou 3.');return}
  if(previous.year>=2199)return;rows.push(advance(previous,note));save();render();
 }
 
