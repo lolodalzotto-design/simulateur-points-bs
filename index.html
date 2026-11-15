@@ -52,6 +52,9 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 <style id="agent-ratings-style">
 .agent-facts.has-ratings{margin-bottom:10px}
 .ratings-box{border:1px solid #dce5df;background:#fff;border-radius:10px;padding:9px 12px;margin:0 0 20px;break-inside:avoid}
+/* Le bandeau Notations reçoit son propre halo vert ; la note 2026 garde son néon rouge. */
+#detail .ratings-box{border-color:rgba(34,194,103,.86);box-shadow:0 0 0 1px rgba(40,205,111,.65),0 0 10px 2px rgba(38,205,108,.44),0 0 22px 5px rgba(25,186,91,.20)}
+@media print{#detail .ratings-box{box-shadow:none!important;border-color:#dce5df!important}}
 .ratings-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;font-size:11px;font-weight:650;color:#566a65}
 .ratings-head small{font-size:10px;font-weight:400;color:#74847f}
 .ratings-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
