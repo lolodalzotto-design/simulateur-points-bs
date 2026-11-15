@@ -23,6 +23,32 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 .agent-notes label{margin:20px 0 6px;font-size:15px}.agent-notes textarea{display:block;width:100%;min-height:140px;padding:14px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink);font:inherit;line-height:1.6;resize:vertical}.agent-notes textarea:focus-visible{outline:3px solid #d19e3e;outline-offset:3px}.agent-notes .tools{margin-top:20px}
 @media print{.agent-notes{display:none!important}}
 </style>
+
+<style id="section-neon-style">
+/* Contours lumineux discrets sur les sections de la fiche agent. */
+#detail .simple-card.simulation-neon,
+#detail .simple-card.projection-neon {
+  border-color: rgba(255,195,35,.85);
+  box-shadow:
+    0 0 0 1px rgba(255,210,45,.55),
+    0 0 10px 2px rgba(255,202,36,.40),
+    0 0 22px 5px rgba(255,189,20,.17);
+}
+#detail .simple-card.agent-notes {
+  border-color: rgba(45,153,255,.83);
+  box-shadow:
+    0 0 0 1px rgba(54,167,255,.50),
+    0 0 10px 2px rgba(35,148,255,.37),
+    0 0 22px 5px rgba(20,123,245,.16);
+}
+@media print {
+  #detail .simple-card.simulation-neon,
+  #detail .simple-card.projection-neon {
+    border-color: #e1e7e3;
+    box-shadow: none;
+  }
+}
+</style>
 <style id="agent-ratings-style">
 .agent-facts.has-ratings{margin-bottom:10px}
 .ratings-box{border:1px solid #dce5df;background:#fff;border-radius:10px;padding:9px 12px;margin:0 0 20px;break-inside:avoid}
@@ -446,7 +472,7 @@ function render(){
  rebuildLevels(a.rows,SEED[active].rows[0].J);
  if(ensureProjectionYears(a.rows,4)){rebuildLevels(a.rows,SEED[active].rows[0].J);save();}
  const r=a.rows[selected];document.title=`${a.name} · Points BS`;
- document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}<button class="no-print" onclick="printSheet()">Imprimer</button></div>${profileFactsMarkup(a)}<div id="pdf-ready" class="hint no-print" hidden></div><p class="period">${title(r)}</p><div class="current-values">${[['D','NFS'],['E','TOEIC'],['J','Niveau']].map(([k,l])=>`<div><span>${l} actuel</span><strong>${Number(SEED[active].rows[0][k]).toLocaleString('fr-FR')}</strong></div>`).join('')}</div><section class="simple-card"><h2>Simulation</h2><div class="simple-inputs">${field('D','NFS')}${field('E','TOEIC','number','max="990"')}<div class="fixed-level"><span>Niveau de notation</span><small>Actuel · fixe</small><output id="current-level" aria-label="Niveau de notation actuel">${Number(SEED[active].rows[0].J).toLocaleString('fr-FR')}</output></div></div><div id="result" aria-live="polite"></div></section><section class="simple-card"><h2>Projection sur 4 ans</h2><div id="projection"></div></section><details class="advanced no-print"><summary>Réglages avancés</summary><div class="advanced-body"><nav class="years" aria-label="Année à régler">${a.rows.map((x,j)=>`<button class="${j===selected?'selected':''}" onclick="openAgent(${active},${j})">${title(x)}</button>`).join('')}</nav><h3>Dates et autres résultats</h3><div class="fields">${field('A','Date d’arrêt','date')}${field('C','Promotion SM / dernier BAT','date')}${field('L','CCPG / 60','number','max="60"')}${field('K','Points positifs')}</div><h3>Notations prises en compte</h3><div class="fields">${field('F','Notation N−1')}${field('G','Notation N−2')}${field('H','Notation N−3')}${field('I','Notation N−4')}</div><h3>Gain opérationnel</h3><div class="fields">${selectField('gopsMode','Mode',[['auto','Calcul automatique'],['manual','Saisie directe']])}${field('gops','Gops saisi','number',r.gopsMode==='auto'?'disabled':'')}${selectField('M','Insigne surfacier',[['','Aucun'],['M SURFELEM','M SURFELEM'],['M SURFSUP','M SURFSUP']])}${selectField('N','Insigne sous-marinier',[['','Aucun'],['C SOUMARELE','C SOUMARELE'],['C SOUMARSUP','C SOUMARSUP']])}${field('O','Jours OPEX / zone d’insécurité')}${field('P','Heures bonifiées aériennes')}</div><div class="tools"><button onclick="copyForward()">Reporter tous les paramètres</button><button onclick="addYearPrompt()">Ajouter une année</button><button onclick="resetAgent()">Réinitialiser cet agent</button></div><div id="calculation-details"></div></div></details>${agentNotesMarkup(a)}<p class="simple-footnote">Simulation indicative · <span class="save"></span></p><p class="printonly">Édité le ${new Date().toLocaleDateString('fr-FR')} · Compte indicatif selon Formule BS.xlsx.</p>`;
+ document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}<button class="no-print" onclick="printSheet()">Imprimer</button></div>${profileFactsMarkup(a)}<div id="pdf-ready" class="hint no-print" hidden></div><p class="period">${title(r)}</p><div class="current-values">${[['D','NFS'],['E','TOEIC'],['J','Niveau']].map(([k,l])=>`<div><span>${l} actuel</span><strong>${Number(SEED[active].rows[0][k]).toLocaleString('fr-FR')}</strong></div>`).join('')}</div><section class="simple-card simulation-neon"><h2>Simulation</h2><div class="simple-inputs">${field('D','NFS')}${field('E','TOEIC','number','max="990"')}<div class="fixed-level"><span>Niveau de notation</span><small>Actuel · fixe</small><output id="current-level" aria-label="Niveau de notation actuel">${Number(SEED[active].rows[0].J).toLocaleString('fr-FR')}</output></div></div><div id="result" aria-live="polite"></div></section><section class="simple-card projection-neon"><h2>Projection sur 4 ans</h2><div id="projection"></div></section><details class="advanced no-print"><summary>Réglages avancés</summary><div class="advanced-body"><nav class="years" aria-label="Année à régler">${a.rows.map((x,j)=>`<button class="${j===selected?'selected':''}" onclick="openAgent(${active},${j})">${title(x)}</button>`).join('')}</nav><h3>Dates et autres résultats</h3><div class="fields">${field('A','Date d’arrêt','date')}${field('C','Promotion SM / dernier BAT','date')}${field('L','CCPG / 60','number','max="60"')}${field('K','Points positifs')}</div><h3>Notations prises en compte</h3><div class="fields">${field('F','Notation N−1')}${field('G','Notation N−2')}${field('H','Notation N−3')}${field('I','Notation N−4')}</div><h3>Gain opérationnel</h3><div class="fields">${selectField('gopsMode','Mode',[['auto','Calcul automatique'],['manual','Saisie directe']])}${field('gops','Gops saisi','number',r.gopsMode==='auto'?'disabled':'')}${selectField('M','Insigne surfacier',[['','Aucun'],['M SURFELEM','M SURFELEM'],['M SURFSUP','M SURFSUP']])}${selectField('N','Insigne sous-marinier',[['','Aucun'],['C SOUMARELE','C SOUMARELE'],['C SOUMARSUP','C SOUMARSUP']])}${field('O','Jours OPEX / zone d’insécurité')}${field('P','Heures bonifiées aériennes')}</div><div class="tools"><button onclick="copyForward()">Reporter tous les paramètres</button><button onclick="addYearPrompt()">Ajouter une année</button><button onclick="resetAgent()">Réinitialiser cet agent</button></div><div id="calculation-details"></div></div></details>${agentNotesMarkup(a)}<p class="simple-footnote">Simulation indicative · <span class="save"></span></p><p class="printonly">Édité le ${new Date().toLocaleDateString('fr-FR')} · Compte indicatif selon Formule BS.xlsx.</p>`;
  document.querySelectorAll('[data-note]').forEach(el=>bindNoteField(el,a));
  document.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('input',()=>change(el)));bindRatingFields(a);update();
 }
