@@ -23,6 +23,16 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 .agent-notes label{margin:20px 0 6px;font-size:15px}.agent-notes textarea{display:block;width:100%;min-height:140px;padding:14px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink);font:inherit;line-height:1.6;resize:vertical}.agent-notes textarea:focus-visible{outline:3px solid #d19e3e;outline-offset:3px}.agent-notes .tools{margin-top:20px}
 @media print{.agent-notes{display:none!important}}
 </style>
+<style id="agent-ratings-style">
+.agent-ratings{background:#fff;border:1px solid #e1e7e3;border-radius:14px;padding:18px 20px;margin:14px 0 16px}
+.agent-ratings h2{font-size:16px;margin:0 0 12px;color:var(--ink)}
+.agent-rating-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.agent-rating-fields label{display:block;font-size:13px;color:var(--ink);font-weight:600}
+.agent-rating-fields input{display:block;width:100%;margin-top:8px;min-height:45px;padding:10px 12px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink);font:inherit;font-size:17px}
+.agent-rating-fields input:focus-visible{outline:3px solid #d19e3e;outline-offset:2px}
+@media(max-width:550px){.agent-rating-fields{grid-template-columns:1fr}}
+@media print{.agent-ratings{display:none!important}}
+</style>
 <style>.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style><style>.rank-bars[data-grade="QM1"] i,.rank-bars[data-grade="QM2"] i,.rank-bars[data-grade="MO"] i{background:#c62828}</style></head><body>
 <header><div class="logo">BS</div><div><div class="brand">Compte de points</div><div class="subtitle">Simulateur de notation</div></div></header>
 <main><section id="home"></section><section id="detail" hidden></section><footer class="footer">Calculs repris de <a href="https://docs.google.com/spreadsheets/d/1unO6LXkCVhCL_L8lfwhtRYVt3zzYq1yC/edit" target="_blank" rel="noopener">Formule BS.xlsx</a>, consulté le 11 novembre 2026. Les simulations restent dans ce navigateur et ne modifient pas le tableur. <br>Pour un raccourci Android : ouvrez le lien dans Chrome, puis menu ⋮ → Ajouter à l’écran d’accueil.</footer></main>
@@ -311,6 +321,23 @@ function bindNoteField(el,agent){
  el.addEventListener('compositionend',()=>{if(previous===''&&el.value!=='')normalize();else persist();});
 }
 
+function agentRatingsMarkup(agent){
+ if(!['QM1','QM2','MO'].includes(agentGrade(agent)))return '';
+ const notes=agent.notes||{},year=2026;
+ return `<section class="agent-ratings no-print" aria-labelledby="agent-ratings-title"><h2 id="agent-ratings-title">Notations</h2><div class="agent-rating-fields"><label for="agent-rating-previous">Notation ${year-1} (année précédente)<input id="agent-rating-previous" data-rating="previousRating" type="text" inputmode="decimal" autocomplete="off" placeholder="Saisie manuelle" value="${esc(notes.previousRating||'')}"></label><label for="agent-rating-proposed">Notation proposée ${year} (cette année)<input id="agent-rating-proposed" data-rating="proposedRating" type="text" inputmode="decimal" autocomplete="off" placeholder="Saisie manuelle" value="${esc(notes.proposedRating||'')}"></label></div></section>`;
+}
+function bindRatingFields(agent){
+ document.querySelectorAll('[data-rating]').forEach(el=>el.addEventListener('input',()=>{
+  agent.notes={...(agent.notes||{}),[el.dataset.rating]:el.value};
+  save();
+ }));
+}
+function agentRatingsPrintMarkup(agent){
+ if(!['QM1','QM2','MO'].includes(agentGrade(agent)))return '';
+ const notes=agent.notes||{},val=s=>esc(String(s||'').trim()||'Non renseignée');
+ return `<section class="agent-ratings-print"><h2>Notations</h2><dl class="rating-values"><div><dt>Notation 2025 (année précédente)</dt><dd>${val(notes.previousRating)}</dd></div><div><dt>Notation proposée 2026 (cette année)</dt><dd>${val(notes.proposedRating)}</dd></div></dl></section>`;
+}
+
 function agentNotesMarkup(agent){
  const notes=agent.notes||{};
  return `<section class="simple-card agent-notes no-print" aria-labelledby="agent-notes-heading"><h2 id="agent-notes-heading">Support de notation</h2>${NOTE_SECTIONS.map(([key,label])=>`<label for="agent-note-${key}">${label}</label><textarea id="agent-note-${key}" data-note="${key}" placeholder="• Description libre…">${esc(notes[key]||'')}</textarea>`).join('')}<div class="tools"><button onclick="printAgentNotes()">${hasPointCalculator(agent)?'Imprimer notes et simulation':'Imprimer les notes'}</button></div></section>`;
@@ -329,7 +356,7 @@ function printAgentNotes(){
  frame.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0';
  document.body.appendChild(frame);
  const doc=frame.contentDocument;
- doc.open();doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Notes et simulation - ${esc(agent.name)}</title><style>@page{size:A4;margin:18mm}body{font:12pt/1.6 system-ui,sans-serif;color:#142d35;margin:0}h1{font-size:24pt;line-height:1.2;margin:0 0 8px}.date{font-size:10pt;color:#617176;margin-bottom:28px}h2{font-size:15pt;border-bottom:1px solid #c9d5d0;padding-bottom:6px;margin:26px 0 10px;break-after:avoid}.note{padding-left:22px;list-style-type:disc;overflow-wrap:anywhere;orphans:3;widows:3}.note li{white-space:pre-wrap;margin:5px 0}footer{margin-top:30px;border-top:1px solid #c9d5d0;padding-top:10px;font-size:9pt;color:#617176}.metrics{display:flex;gap:24px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #c9d5d0}th:last-child,td:last-child{text-align:right}.simulation-summary{break-inside:avoid}.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style></head><body><h1>${esc(agent.name)} · Support de notation</h1><p class="date">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>${profileFactsMarkup(agent)}${notesSimulationMarkup(agent,selected)}${NOTE_SECTIONS.map(([key,label])=>`<section><h2>${label}</h2>${noteListMarkup(notes[key])}</section>`).join('')}<footer>Support d’argumentation de la notation</footer></body></html>`);doc.close();
+ doc.open();doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Notes et simulation - ${esc(agent.name)}</title><style>@page{size:A4;margin:18mm}body{font:12pt/1.6 system-ui,sans-serif;color:#142d35;margin:0}h1{font-size:24pt;line-height:1.2;margin:0 0 8px}.date{font-size:10pt;color:#617176;margin-bottom:28px}h2{font-size:15pt;border-bottom:1px solid #c9d5d0;padding-bottom:6px;margin:26px 0 10px;break-after:avoid}.note{padding-left:22px;list-style-type:disc;overflow-wrap:anywhere;orphans:3;widows:3}.note li{white-space:pre-wrap;margin:5px 0}footer{margin-top:30px;border-top:1px solid #c9d5d0;padding-top:10px;font-size:9pt;color:#617176}.metrics{display:flex;gap:24px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #c9d5d0}th:last-child,td:last-child{text-align:right}.rating-values{display:flex;gap:30px;margin:8px 0 22px}.rating-values>div{flex:1}.rating-values dt{font-size:10pt;color:#617176}.rating-values dd{font-size:15pt;font-weight:650;margin:3px 0}.agent-ratings-print{break-inside:avoid}.simulation-summary{break-inside:avoid}.agent-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:12px 0 24px;padding:16px 0;border-bottom:1px solid #dce4e1}.agent-facts>div{min-width:0}.agent-facts dt{font-size:11px;color:#617176;line-height:1.4;margin-bottom:4px}.agent-facts dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}.agent-caption{font-size:12px;color:#617176;margin:4px 0 0}.agent-identity h1{overflow-wrap:anywhere}.agent-choice .grade-label{font-size:12px;color:#617176;min-width:43px;text-align:center;flex:none}@media(max-width:550px){.agent-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.agent-identity h1{font-size:24px}}</style></head><body><h1>${esc(agent.name)} · Support de notation</h1><p class="date">Édité le ${new Date().toLocaleDateString('fr-FR')}</p>${profileFactsMarkup(agent)}${agentRatingsPrintMarkup(agent)}${notesSimulationMarkup(agent,selected)}${NOTE_SECTIONS.map(([key,label])=>`<section><h2>${label}</h2>${noteListMarkup(notes[key])}</section>`).join('')}<footer>Support d’argumentation de la notation</footer></body></html>`);doc.close();
  frame.contentWindow.addEventListener('afterprint',()=>setTimeout(()=>frame.remove(),1000),{once:true});
  (doc.fonts?doc.fonts.ready:Promise.resolve()).then(()=>{frame.contentWindow.focus();frame.contentWindow.print();});
 }
@@ -338,8 +365,9 @@ function render(){
  const a=state[active];
  if(!hasPointCalculator(a)){
   document.title=a.name+' · Fiche agent';
-  document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}</div>${profileFactsMarkup(a)}${agentNotesMarkup(a)}<p class="simple-footnote"><span class="save"></span></p>`;
+  document.getElementById('detail').innerHTML=`<button class="back no-print" onclick="home()">← Agents</button><div class="simple-heading">${agentIdentityMarkup(a)}</div>${agentRatingsMarkup(a)}${profileFactsMarkup(a)}${agentNotesMarkup(a)}<p class="simple-footnote"><span class="save"></span></p>`;
   document.querySelectorAll('[data-note]').forEach(el=>bindNoteField(el,a));
+  bindRatingFields(a);
   document.querySelectorAll('.save').forEach(el=>el.textContent=storageOK?'Enregistré sur cet appareil':'Exportez une sauvegarde : enregistrement indisponible.');
   return;
  }
