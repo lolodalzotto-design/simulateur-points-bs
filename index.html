@@ -326,7 +326,7 @@ function home(){
  h.innerHTML=`<h1>Choisir un agent</h1><div class="agent-list">${state.map((a,i)=>`<button class="agent-choice" onclick="openAgent(${i})"><span class="agent-choice-label">${rankBarsMarkup(a)}<strong>${a.name}</strong></span><span aria-hidden="true">›</span></button>`).join('')}</div><details class="options"><summary>Options</summary><div class="tools"><button onclick="backup()">Exporter</button><button onclick="document.getElementById('import').click()">Importer</button><button onclick="downloadHTML()">Télécharger le HTML</button></div></details>`;
 }
 
-const NOTE_SECTIONS=[['completed','Travail effectué'],['ongoing','Travail en cours'],['projection','Projection'],['services','Services'],['decoration','Décoration']];
+const NOTE_SECTIONS=[['completed','Travail effectué'],['services','Services'],['decoration','Décoration']];
 
 
 function bulletNoteText(text){
