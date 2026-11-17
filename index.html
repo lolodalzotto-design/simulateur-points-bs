@@ -20,7 +20,7 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 .rank-bars i{display:block;flex:none;height:25px;width:5px;border-radius:0;background:#e5b619;transform:skewX(-45deg)}
 @media(max-width:450px){.agent-identity{gap:10px}.agent-portrait{width:56px;height:70px}.simple-heading h1{font-size:24px}}
 </style><style id="agent-notes-style">
-.conductor-mea{margin:16px 0}.conductor-mea label{display:block}.conductor-mea select{width:100%;max-width:280px;padding:9px 12px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink)}
+.conductor-mea{margin:16px 0}.conductor-mea label{display:block}.conductor-mea .mea-check{display:flex;align-items:center;gap:8px}.mea-check input{width:18px;height:18px;accent-color:#16803c}.conductor-mea select{width:100%;max-width:280px;padding:9px 12px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink)}
 .agent-notes label{margin:20px 0 6px;font-size:15px}.agent-notes textarea{display:block;width:100%;min-height:140px;padding:14px;border:1px solid #c9d5d0;border-radius:8px;background:#fafcfb;color:var(--ink);font:inherit;line-height:1.6;resize:vertical}.agent-notes textarea:focus-visible{outline:3px solid #d19e3e;outline-offset:3px}.agent-notes .tools{margin-top:20px}
 @media print{.agent-notes{display:none!important}}
 </style>
@@ -405,10 +405,21 @@ function updateProposedRating(agent){
  if(output)output.textContent=ratingDisplay(proposedRating2026(agent));
 }
 function bindRatingFields(agent){
- const conductorMEA=document.querySelector('[data-conductor-mea]');
- if(conductorMEA&&agentGrade(agent)==='SM')conductorMEA.addEventListener('change',()=>{
-  agent.notes={...(agent.notes||{}),conductorMEA:conductorMEA.value};save();
- });
+ if(agentGrade(agent)==='SM'){
+  const conductorMEA=document.querySelector('[data-conductor-mea]');
+  conductorMEA?.addEventListener('change',()=>{
+   agent.notes={...(agent.notes||{}),conductorMEA:conductorMEA.checked?'oui':'non'};
+   document.querySelector('[data-mea-valid]').hidden=!conductorMEA.checked;save();
+  });
+  const tutoring=document.querySelector('[data-tutoring]');
+  tutoring?.addEventListener('change',()=>{
+   agent.notes={...(agent.notes||{}),tutoring:tutoring.value};
+   document.querySelector('[data-tutored-field]').hidden=tutoring.value!=='oui';save();
+  });
+  document.querySelector('[data-tutored-name]')?.addEventListener('input',event=>{
+   agent.notes={...(agent.notes||{}),tutoredName:event.target.value};save();
+  });
+ }
  document.querySelectorAll('[data-rating]').forEach(el=>el.addEventListener('change',()=>{
   agent.notes={...(agent.notes||{}),[el.dataset.rating]:el.value};
   save();
@@ -435,9 +446,9 @@ function protectHistoricalRatings(agent){
 }
 function conductorMEAMarkup(agent,editable=true){
  if(agentGrade(agent)!=='SM')return '';
- const value=['oui','non'].includes(agent.notes?.conductorMEA)?agent.notes.conductorMEA:'';
- if(!editable)return '<p><strong>Cond. MEA — Conducteur MEA habilité :</strong> '+({oui:'Oui',non:'Non'}[value]||'Non renseigné')+'</p>';
- return '<div class="conductor-mea"><label for="agent-conductor-mea">Cond. MEA — Conducteur MEA habilité</label><select id="agent-conductor-mea" data-conductor-mea aria-label="Conducteur MEA habilité"><option value=""'+(value===''?' selected':'')+'>Non renseigné</option><option value="oui"'+(value==='oui'?' selected':'')+'>Oui</option><option value="non"'+(value==='non'?' selected':'')+'>Non</option></select></div>';
+ const notes=agent.notes||{},checked=notes.conductorMEA==='oui',tutoring=notes.tutoring==='oui';
+ if(!editable)return `<p><strong>Conducteur MEA :</strong> ${checked?'Oui ✓':'Non'}</p><p><strong>Tutorat :</strong> ${tutoring?'Oui — '+esc(notes.tutoredName||'Agent tutoré non renseigné'):'Non'}</p>`;
+ return `<div class="conductor-mea"><label class="mea-check" for="agent-conductor-mea"><input type="checkbox" id="agent-conductor-mea" data-conductor-mea${checked?' checked':''}> Conducteur MEA <span data-mea-valid${checked?'':' hidden'} role="status" aria-label="Habilitation validée" style="color:#16803c;font-weight:700">✓</span></label></div><div class="conductor-mea"><label for="agent-tutoring">Tutorat</label><select id="agent-tutoring" data-tutoring><option value="non"${!tutoring?' selected':''}>Non</option><option value="oui"${tutoring?' selected':''}>Oui</option></select><div data-tutored-field${tutoring?'':' hidden'} style="margin-top:10px"><label for="agent-tutored-name">Nom de l’agent tutoré</label><input id="agent-tutored-name" data-tutored-name type="text" value="${esc(notes.tutoredName||'')}" placeholder="Nom de l’agent tutoré" style="width:100%;max-width:280px;box-sizing:border-box;padding:9px 12px;border:1px solid #c9d5d0;border-radius:8px"></div></div>`;
 }
 function agentNotesMarkup(agent){
  const notes=agent.notes||{};
