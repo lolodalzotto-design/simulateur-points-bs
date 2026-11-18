@@ -15,6 +15,7 @@ header,.footer{display:none}main{max-width:590px;padding:28px 20px 50px}body{bac
 .agent-choice .agent-choice-label{min-width:0;gap:12px}
 .agent-choice-label strong{overflow-wrap:anywhere}
 .agent-choice .agent-proposed-rating{flex:none;min-width:40px;margin-left:12px;padding:4px 7px;text-align:center;color:var(--ink);font-size:17px;font-weight:700;border-radius:7px;box-shadow:0 0 0 1px rgba(255,37,58,.72),0 0 8px 2px rgba(255,23,54,.62),0 0 18px 5px rgba(255,7,40,.25)}
+.agent-choice .agent-proposed-rating[data-grade="SM"]{box-shadow:0 0 0 1px rgba(229,182,25,.72),0 0 8px 2px rgba(229,182,25,.62),0 0 18px 5px rgba(229,182,25,.25)}
 </style><style>
 .agent-identity{display:flex;align-items:center;gap:15px;min-width:0}
 .agent-portrait{display:block;width:68px;height:84px;object-fit:contain;flex:none;border-radius:7px;background:#e7e9e5;border:1px solid #d4dcd6}
@@ -326,7 +327,7 @@ function rankBarsMarkup(agent){
 function home(){
  active=-1;document.title='Compte de points BS';document.getElementById('detail').hidden=true;
  const h=document.getElementById('home');h.hidden=false;
- h.innerHTML=`<h1>Choisir un agent</h1><div class="agent-list">${state.map((a,i)=>`<button class="agent-choice" onclick="openAgent(${i})"><span class="agent-choice-label">${rankBarsMarkup(a)}<strong>${a.name}</strong></span><span class="agent-proposed-rating" aria-label="Notation proposée 2026 : ${esc(ratingDisplay(proposedRating2026(a)))}">${esc(ratingDisplay(proposedRating2026(a)))}</span></button>`).join('')}</div><details class="options"><summary>Options</summary><div class="tools"><button onclick="backup()">Exporter</button><button onclick="document.getElementById('import').click()">Importer</button><button onclick="downloadHTML()">Télécharger le HTML</button></div></details>`;
+ h.innerHTML=`<h1>Choisir un agent</h1><div class="agent-list">${state.map((a,i)=>`<button class="agent-choice" onclick="openAgent(${i})"><span class="agent-choice-label">${rankBarsMarkup(a)}<strong>${a.name}</strong></span><span class="agent-proposed-rating" data-grade="${esc(agentGrade(a))}" aria-label="Notation proposée 2026 : ${esc(ratingDisplay(proposedRating2026(a)))}">${esc(ratingDisplay(proposedRating2026(a)))}</span></button>`).join('')}</div><details class="options"><summary>Options</summary><div class="tools"><button onclick="backup()">Exporter</button><button onclick="document.getElementById('import').click()">Importer</button><button onclick="downloadHTML()">Télécharger le HTML</button></div></details>`;
 }
 
 const NOTE_SECTIONS=[['completed','Travail effectué'],['services','Services'],['decoration','Décoration']];
