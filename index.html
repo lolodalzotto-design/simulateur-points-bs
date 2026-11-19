@@ -213,12 +213,12 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const num=x=>fmt.format(x);const title=r=>`${r.year} / ${r.year+1}${r.variant?' · variante':''}`;
 function noteOptions(value){
  const values=[0,0.5,1,1.5,2,3],number=Number(value);
- const current=value===''?'<option value="" disabled selected>Choisir</option>':values.includes(number)?'':`<option value="${esc(value)}" disabled selected>${esc(value)}</option>`;
+ const current=`<option value="" ${value===''?'selected':''}>Aucune valeur</option>`+(value!==''&&!values.includes(number)?`<option value="${esc(value)}" disabled selected>${esc(value)}</option>`:'');
  return current+values.map(note=>`<option value="${note}" ${value!==''&&number===note?'selected':''}>${String(note).replace('.',',')}</option>`).join('');
 }
 function ratingOptions(value){
  const values=[0,0.5,1,1.5,2,3],original=String(value??''),normalized=original.replace(',','.'),number=Number(normalized);
- const empty=`<option value="" ${original===''?'selected':''}>—</option>`;
+ const empty=`<option value="" ${original===''?'selected':''}>Aucune valeur</option>`;
  const older=original!==''&&!values.includes(number)?`<option value="${esc(original)}" disabled selected>${esc(original)}</option>`:'';
  return empty+older+values.map(note=>`<option value="${note}" ${original!==''&&number===note?'selected':''}>${String(note).replace('.',',')}</option>`).join('');
 }
