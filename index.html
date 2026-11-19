@@ -331,12 +331,18 @@ function agentMatriculeOrder(agent){
 }
 function orderedAgentEntries(){
  // Keep state and SEED indices unchanged: saved notes and calculators use them.
- return state.map((a,i)=>({a,i})).sort((left,right)=>{
+ const entries=state.map((a,i)=>({a,i})).sort((left,right)=>{
   const group=Number(agentGrade(left.a)!=='SM')-Number(agentGrade(right.a)!=='SM');
   if(group)return group;
   const a=agentMatriculeOrder(left.a),b=agentMatriculeOrder(right.a);
   return (a[0]===b[0]?0:a[0]<b[0]?-1:1)||(a[1]===b[1]?0:a[1]<b[1]?-1:1)||left.i-right.i;
  });
+ // Move Plair up one display position within the equipage group.
+ const plairIndex=entries.findIndex(({a})=>a.name==='PLAIR');
+ if(plairIndex>0&&agentGrade(entries[plairIndex-1].a)!=='SM'){
+  [entries[plairIndex-1],entries[plairIndex]]=[entries[plairIndex],entries[plairIndex-1]];
+ }
+ return entries;
 }
 
 function home(){
